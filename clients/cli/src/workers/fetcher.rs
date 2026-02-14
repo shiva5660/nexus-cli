@@ -60,8 +60,8 @@ impl TaskFetcher {
             event_sender,
             config: config.clone(),
             last_success_duration_secs: None,
-            last_success_difficulty: None,
-            last_requested_difficulty: None,
+            last_success_difficulty: ExtraLarge,
+            last_requested_difficulty: ExtraLarge2,
         }
     }
 
@@ -116,16 +116,6 @@ impl TaskFetcher {
                 );
                 if promote {
                     match current {
-                        crate::nexus_orchestrator::TaskDifficulty::Small => {
-                            // Small promotes to SmallMedium
-                            crate::nexus_orchestrator::TaskDifficulty::SmallMedium
-                        }
-                        crate::nexus_orchestrator::TaskDifficulty::SmallMedium => {
-                            crate::nexus_orchestrator::TaskDifficulty::Medium
-                        }
-                        crate::nexus_orchestrator::TaskDifficulty::Medium => {
-                            crate::nexus_orchestrator::TaskDifficulty::Large
-                        }
                         crate::nexus_orchestrator::TaskDifficulty::Large => {
                             crate::nexus_orchestrator::TaskDifficulty::ExtraLarge
                         }
@@ -151,7 +141,7 @@ impl TaskFetcher {
                 }
             } else {
                 // No previous success - start at SmallMedium
-                crate::nexus_orchestrator::TaskDifficulty::SmallMedium
+                crate::nexus_orchestrator::TaskDifficulty::ExtraLarge
             }
         };
 
@@ -265,7 +255,7 @@ mod tests {
                 public_inputs: vec![1, 2, 3],
                 public_inputs_list: vec![vec![1, 2, 3]],
                 task_type: crate::nexus_orchestrator::TaskType::ProofHash,
-                difficulty: crate::nexus_orchestrator::TaskDifficulty::Medium,
+                difficulty: crate::nexus_orchestrator::TaskDifficulty::ExtraLarge,
             };
 
             Ok(crate::orchestrator::client::ProofTaskResult {
@@ -342,7 +332,7 @@ mod tests {
         // Verify the last requested difficulty was SmallMedium
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::SmallMedium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -351,7 +341,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Set up initial state: last success was Small
-        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Small);
+        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(300); // 5 minutes - should promote
 
         let task = fetcher
@@ -363,7 +353,7 @@ mod tests {
         // Should promote from Small to SmallMedium
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::SmallMedium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -373,7 +363,7 @@ mod tests {
 
         // Set up initial state: last success was SmallMedium
         fetcher.last_success_difficulty =
-            Some(crate::nexus_orchestrator::TaskDifficulty::SmallMedium);
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(300); // 5 minutes - should promote
 
         let task = fetcher
@@ -385,7 +375,7 @@ mod tests {
         // Should promote from SmallMedium to Medium
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::Medium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -394,7 +384,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Set up initial state: last success was Medium
-        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Medium);
+        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(300); // 5 minutes - should promote
 
         let task = fetcher
@@ -436,7 +426,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Set up initial state: last success was Medium, but took 8 minutes (too long)
-        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Medium);
+        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(480); // 8 minutes - should NOT promote
 
         let task = fetcher
@@ -448,7 +438,7 @@ mod tests {
         // Should NOT promote (stays at Medium)
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::Medium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -477,7 +467,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Set up manual override to Small
-        fetcher.config.max_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Small);
+        fetcher.config.max_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
 
         let task = fetcher
             .fetch_task()
@@ -488,7 +478,7 @@ mod tests {
         // Should use the manual override (Small)
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::Small)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -501,7 +491,7 @@ mod tests {
         assert_eq!(fetcher.last_success_duration_secs, None);
 
         // Set a requested difficulty
-        fetcher.last_requested_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Medium);
+        fetcher.last_requested_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
 
         // Update success tracking
         fetcher.update_success_tracking(300); // 5 minutes
@@ -509,7 +499,7 @@ mod tests {
         // Verify tracking was updated
         assert_eq!(
             fetcher.last_success_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::Medium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
         assert_eq!(fetcher.last_success_duration_secs, Some(300));
     }
@@ -594,7 +584,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Test exactly 7 minutes (420 seconds) - should NOT promote
-        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Medium);
+        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(420); // Exactly 7 minutes
 
         let task = fetcher
@@ -606,7 +596,7 @@ mod tests {
         // Should NOT promote (stays at Medium)
         assert_eq!(
             fetcher.last_requested_difficulty,
-            Some(crate::nexus_orchestrator::TaskDifficulty::Medium)
+            Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge)
         );
     }
 
@@ -615,7 +605,7 @@ mod tests {
         let mut fetcher = create_test_fetcher();
 
         // Test just under 7 minutes (419 seconds) - should promote
-        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::Medium);
+        fetcher.last_success_difficulty = Some(crate::nexus_orchestrator::TaskDifficulty::ExtraLarge);
         fetcher.last_success_duration_secs = Some(419); // Just under 7 minutes
 
         let task = fetcher
